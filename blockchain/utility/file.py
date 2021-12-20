@@ -4,8 +4,8 @@ import json
 import pickle
 
 from collections import OrderedDict
-from block import Block
-from transaction import Transaction
+from blockchain.block import Block
+from blockchain.transaction import Transaction
 
 
 FILE_NAME = "blockchain.txt"
@@ -38,7 +38,9 @@ def load_data_json():
                 index=block["index"],
                 previous_hash=block["previous_hash"],
                 transactions=[
-                    Transaction(tx["sender"], tx["recipient"], tx["amount"])
+                    Transaction(
+                        tx["sender"], tx["recipient"], tx["amount"], tx["signature"]
+                    )
                     for tx in block["transactions"]
                 ],
                 proof=block["proof"],
@@ -50,7 +52,7 @@ def load_data_json():
         open_transactions = json.loads(file_content[1])
         # convert to OrderedDict
         open_transactions = [
-            Transaction(tx["sender"], tx["recipient"], tx["amount"])
+            Transaction(tx["sender"], tx["recipient"], tx["amount"], tx["signature"])
             for tx in open_transactions
         ]
 
@@ -66,6 +68,7 @@ def save_data_json(blockchain, open_transactions):
                 blk.previous_hash,
                 [tx.__dict__ for tx in blk.transactions],
                 blk.proof,
+                blk.timestamp
             )
             for blk in blockchain
         ]
@@ -79,8 +82,10 @@ def save_data_json(blockchain, open_transactions):
 
 # Save and load data interface
 def save_data(blockchain, open_transactions):
+    # save_data_pickle(blockchain, open_transactions)
     save_data_json(blockchain, open_transactions)
 
 
 def load_data():
+    # return load_data_pickle()
     return load_data_json()

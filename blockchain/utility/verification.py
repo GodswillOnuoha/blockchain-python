@@ -1,4 +1,5 @@
-from utility.hash_util import hash_block, hash_string_256
+from blockchain.utility.hash_util import hash_block, hash_string_256
+from blockchain.wallet import Wallet
 
 
 class Verifier:
@@ -27,14 +28,18 @@ class Verifier:
         return True
 
     @staticmethod
-    def verify_transaction(transaction, get_balance):
-        """Verify transaction by checking that the sender has sufficient balance
+    def verify_transaction(transaction, get_balance, check_fund=True):
+        """Verify transaction by checking signature, and that the sender has sufficient balance
 
         Arguments:
             :transaction: The transaction that should be verified
+            :get_balance: The function that retuns user's balance
+            :check_fund: Flag to check balance. function checks only signature if check_fund is false
         """
-        sender_balance = get_balance()
-        return sender_balance >= transaction.amount
+        if check_fund:
+            sender_balance = get_balance()
+            return sender_balance >= transaction.amount and Wallet.verify_transaction(transaction)
+        return Wallet.verify_transaction(transaction)
 
     # def verify_transactions(self, transactions, get_balance):
     #     """Verify transactions by checking that the sender has sufficient balance for each transaction
@@ -42,4 +47,4 @@ class Verifier:
     #     Arguments:
     #         :trannsactions: The transactions that should be verified
     #     """
-    #     return all([self.verify_transaction(tx, get_balance) for tx in transactions])
+    #     return all([self.verify_transaction(tx, get_balance, False) for tx in transactions])
