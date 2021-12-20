@@ -91,17 +91,17 @@ class Blockchain:
         hashed_block = hash_block(last_block)
         proof = self.proof_of_work()
         reward_transaction = Transaction("MINING", self.hosting_node, MINING_REWARD, "")
-        
+
         # Copy transaction and not modify the original
         # This ensures that if mining fails, we do not add reward transaction
         copied_transactions = self.open_transactions[:]
         for tx in copied_transactions:
             if not Wallet.verify_transaction(tx):
                 return False
-            
+
         copied_transactions.append(reward_transaction)
         block = Block(len(self.__chain), hashed_block, copied_transactions, proof)
-        
+
         self.__chain.append(block)
         self.open_transactions = []
         save_data(self.__chain, self.open_transactions)

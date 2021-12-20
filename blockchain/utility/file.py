@@ -68,7 +68,7 @@ def save_data_json(blockchain, open_transactions):
                 blk.previous_hash,
                 [tx.__dict__ for tx in blk.transactions],
                 blk.proof,
-                blk.timestamp
+                blk.timestamp,
             )
             for blk in blockchain
         ]

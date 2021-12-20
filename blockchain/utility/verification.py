@@ -38,7 +38,9 @@ class Verifier:
         """
         if check_fund:
             sender_balance = get_balance()
-            return sender_balance >= transaction.amount and Wallet.verify_transaction(transaction)
+            return sender_balance >= transaction.amount and Wallet.verify_transaction(
+                transaction
+            )
         return Wallet.verify_transaction(transaction)
 
     # def verify_transactions(self, transactions, get_balance):
