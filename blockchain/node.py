@@ -77,6 +77,43 @@ def get_chain():
 
     return jsonify(dict_chain)
 
+@app.route('/nodes', methods=['POST'])
+def add_node():
+    values = request.get_json()
+    
+    if not values:
+        response = {
+            'message': 'No data found.'
+        }
+        return jsonify(response), 400
+    
+    if not 'node' in values:
+        response = {'message': 'Required field missing'}
+        return jsonify(response), 400
+    
+    node = values['node']
+    blockchain.add_node(node)
+    response = {'message': 'Node successfully added', 'nodes': blockchain.get_nodes()}
+    return jsonify(response), 201
+
+@app.route('/nodes/<node_url>', methods=['DELETE'])
+def remove_node(node_url):
+    if node_url == "" or node_url == None:
+        response = {
+            'message': 'No node found.'
+        }
+        return jsonify(response), 400
+    
+    blockchain.remove_node(node_url)
+    response = {'message': 'Node successfully removed', 'nodes': blockchain.get_nodes()}
+    return jsonify(response)
+
+
+@app.route('/nodes')
+def get_nodes():
+    nodes = blockchain.get_nodes()
+    response = {'message': 'Nodes successfully fetched', 'nodes': nodes}
+    return jsonify(response)
 
 @app.route("/transactions", methods=["GET"])
 def get_open_transactions():
@@ -149,5 +186,5 @@ def mine_blocks():
 
 
 class Node:
-    def start(self):
-        app.run(host="0.0.0.0", port=3000)
+    def start(self, host='0.0.0.0', port='3000'):
+        app.run(host=host, port=port)

@@ -16,12 +16,13 @@ def load_data_pickle():
         file_content = pickle.loads(f.read())
         blockchain = file_content["chain"]
         open_transactions = file_content["open_transactions"]
-    return blockchain, open_transactions
+        peer_nodes = file_content['peer_nodes']
+    return blockchain, open_transactions, peer_nodes
 
 
-def save_data_pickle(blockchain, open_transactions):
+def save_data_pickle(blockchain, open_transactions, peer_nodes):
     with open(FILE_NAME, "wb") as f:
-        data = {"chain": blockchain, "open_transactions": open_transactions}
+        data = {"chain": blockchain, "open_transactions": open_transactions, "peer_nodes": peer_nodes}
         f.write(pickle.dumps(data))
 
 
@@ -55,12 +56,13 @@ def load_data_json():
             Transaction(tx["sender"], tx["recipient"], tx["amount"], tx["signature"])
             for tx in open_transactions
         ]
+        peer_nodes = set(json.loads(file_content[2]))
 
-        return blockchain, open_transactions
+        return blockchain, open_transactions, peer_nodes
 
 
-def save_data_json(blockchain, open_transactions):
-    hashable_chain = [
+def save_data_json(blockchain, open_transactions, peer_nodes):
+    saveable_chain = [
         block.__dict__
         for block in [
             Block(
@@ -73,17 +75,19 @@ def save_data_json(blockchain, open_transactions):
             for blk in blockchain
         ]
     ]
-    hashable_tx = [tx.__dict__ for tx in open_transactions]
+    saveable_tx = [tx.__dict__ for tx in open_transactions]
     with open(FILE_NAME, "w") as f:
-        f.write(json.dumps(hashable_chain))
+        f.write(json.dumps(saveable_chain))
         f.write("\n")
-        f.write(json.dumps(hashable_tx))
+        f.write(json.dumps(saveable_tx))
+        f.write('\n')
+        f.write(json.dumps(list(peer_nodes)))
 
 
 # Save and load data interface
-def save_data(blockchain, open_transactions):
-    # save_data_pickle(blockchain, open_transactions)
-    save_data_json(blockchain, open_transactions)
+def save_data(blockchain, open_transactions, peer_nodes):
+    # save_data_pickle(blockchain, open_transactions, peer_nodes)
+    save_data_json(blockchain, open_transactions, peer_nodes)
 
 
 def load_data():
