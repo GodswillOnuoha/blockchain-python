@@ -33,33 +33,32 @@ class Blockchain:
     @chain.setter
     def chain(self, val):
         self.__chain = val
-    
+
     def save_data(self):
         save_data(self.__chain, self.__open_transactions, self.__peer_nodes)
-        
+
     def add_node(self, node):
         """Adds a node to the chain
-        
+
         Arguments:
             :node: The node URL to be added
         """
         self.__peer_nodes.add(node)
         self.save_data()
-    
-    
+
     def remove_node(self, node):
         """Removes a node from the chain
-        
+
         Arguments:
             :node: The node URL to remove
         """
         self.__peer_nodes.discard(node)
         self.save_data()
-    
+
     def get_nodes(self):
         """Returns a list of connected peer nodes"""
         return list(self.__peer_nodes)
-        
+
     def get_open_transactions(self):
         """Returns a copy of open transactions"""
         return self.__open_transactions[:]

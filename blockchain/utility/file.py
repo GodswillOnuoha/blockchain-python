@@ -16,13 +16,17 @@ def load_data_pickle():
         file_content = pickle.loads(f.read())
         blockchain = file_content["chain"]
         open_transactions = file_content["open_transactions"]
-        peer_nodes = file_content['peer_nodes']
+        peer_nodes = file_content["peer_nodes"]
     return blockchain, open_transactions, peer_nodes
 
 
 def save_data_pickle(blockchain, open_transactions, peer_nodes):
     with open(FILE_NAME, "wb") as f:
-        data = {"chain": blockchain, "open_transactions": open_transactions, "peer_nodes": peer_nodes}
+        data = {
+            "chain": blockchain,
+            "open_transactions": open_transactions,
+            "peer_nodes": peer_nodes,
+        }
         f.write(pickle.dumps(data))
 
 
@@ -80,7 +84,7 @@ def save_data_json(blockchain, open_transactions, peer_nodes):
         f.write(json.dumps(saveable_chain))
         f.write("\n")
         f.write(json.dumps(saveable_tx))
-        f.write('\n')
+        f.write("\n")
         f.write(json.dumps(list(peer_nodes)))
 
 
