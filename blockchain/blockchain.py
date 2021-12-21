@@ -17,11 +17,11 @@ class Blockchain:
         # Initializing empty blockchain
         self.chain = [genesis_block]
         # Unhandled transactions
-        self.open_transactions = []
+        self.__open_transactions = []
         self.hosting_node = hosting_node_id
 
         try:
-            self.chain, self.open_transactions = load_data()
+            self.chain, self.__open_transactions = load_data()
         except (FileNotFoundError, IndexError):
             pass
 
@@ -33,22 +33,32 @@ class Blockchain:
     def chain(self, val):
         self.__chain = val
 
+    def get_open_transactions(self):
+        """Returns a copy of open transactions"""
+        return self.__open_transactions[:]
+
     def proof_of_work(self):
         last_block = self.__chain[-1]
         last_hash = hash_block(last_block)
         proof = 0
-        while not Verifier.valid_proof(self.open_transactions, last_hash, proof):
+        while not Verifier.valid_proof(self.__open_transactions, last_hash, proof):
             proof += 1
         return proof
 
     def get_balance(self):
+        if self.hosting_node == None:
+            return None
+
         participant = self.hosting_node
+        # Fetch all sent transaction for the user
+        # fetches amount of transactions already included in blockchain
         tx_sender = [
             [tx.amount for tx in block.transactions if tx.sender == participant]
             for block in self.__chain
         ]
+        # Fetches amount of all transactions yet to be mined. to avoid double spending
         open_tx_sender = [
-            tx.amount for tx in self.open_transactions if tx.sender == participant
+            tx.amount for tx in self.__open_transactions if tx.sender == participant
         ]
         tx_sender.append(open_tx_sender)
         sent_amount = 0
@@ -78,14 +88,14 @@ class Blockchain:
 
         transaction = Transaction(sender, recipient, amount, signature)
         if Verifier.verify_transaction(transaction, self.get_balance):
-            self.open_transactions.append(transaction)
-            save_data(self.__chain, self.open_transactions)
+            self.__open_transactions.append(transaction)
+            save_data(self.__chain, self.__open_transactions)
             return True
         return False
 
-    def min_block(self):
+    def mine_block(self):
         if self.hosting_node == None:
-            return False
+            return None
 
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)
@@ -94,15 +104,15 @@ class Blockchain:
 
         # Copy transaction and not modify the original
         # This ensures that if mining fails, we do not add reward transaction
-        copied_transactions = self.open_transactions[:]
+        copied_transactions = self.__open_transactions[:]
         for tx in copied_transactions:
             if not Wallet.verify_transaction(tx):
-                return False
+                return None
 
         copied_transactions.append(reward_transaction)
         block = Block(len(self.__chain), hashed_block, copied_transactions, proof)
 
         self.__chain.append(block)
-        self.open_transactions = []
-        save_data(self.__chain, self.open_transactions)
-        return True
+        self.__open_transactions = []
+        save_data(self.__chain, self.__open_transactions)
+        return block
