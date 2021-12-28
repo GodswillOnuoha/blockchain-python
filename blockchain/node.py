@@ -236,6 +236,16 @@ def mine_blocks():
     return jsonify(response), 500
 
 
+@app.route("/resolve-conflicts", methods=["POST"])
+def resolve_conflicts():
+    replaced = blockchain.resolve_conflict()
+    if replaced:
+        response = {"message": "Chain replaced"}
+    else:
+        response = {"message": "Local chain retained"}
+    return jsonify(response), 200
+
+
 class Node:
     def start(self, host="0.0.0.0", port="3000"):
         app.run(host=host, port=port)
