@@ -2,3 +2,4 @@ venv/
 blockchain.txt
 blockchain.p
 wallet.txt
+*.pyc

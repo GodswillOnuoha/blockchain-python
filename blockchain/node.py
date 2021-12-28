@@ -1,9 +1,7 @@
+from types import BuiltinFunctionType
+from Crypto import Signature
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from werkzeug.wrappers import response
-import blockchain
-from blockchain import block
-from blockchain import transaction
 
 from blockchain.wallet import Wallet
 from blockchain.blockchain import Blockchain
@@ -163,8 +161,62 @@ def add_transaction():
     return jsonify(response), 201
 
 
+@app.route("/broadcast-transaction", methods=["POST"])
+def broadcast_transction():
+    values = request.get_json()
+
+    if not values:
+        response = {"message": "No data found."}
+        return jsonify(response), 400
+
+    required_fields = ["sender", "recipient", "amount", "signature"]
+    if not all(field in values for field in required_fields):
+        response = {"message": "Required field missing."}
+        return jsonify(response), 400
+
+    success = blockchain.add_transaction(
+        values["recipient"],
+        values["sender"],
+        values["signature"],
+        values["amount"],
+        is_broadcast=True,
+    )
+    if not success:
+        response = {"message": "Validation failed"}
+        return jsonify(response), 500
+
+    response = {"message": "transacttion validated"}
+    return jsonify(response), 200
+
+
+@app.route("/broadcast-block", methods=["POST"])
+def broadcast_block():
+    values = request.get_json()
+    if not values or not "block" in values:
+        response = {"message": "Required field missing"}
+        return jsonify(response), 400
+    block = values["block"]
+    if block["index"] == blockchain.chain[-1].index + 1:
+        if blockchain.add_block(block):
+            response = {"message": "Block accepted"}
+            return jsonify(response), 200
+        else:
+            response = {"message": "Block seems invalid"}
+            return jsonify(response), 409
+    elif block["index"] > blockchain.chain[-1].index:
+        blockchain.resolve_conflicts = True
+        response = {"message": "Blockchain seems to differ fom local chain"}
+        return jsonify(response), 200
+    else:
+        response = {"message": "shorter blockchain, block not added"}
+        return jsonify(response), 409
+
+
 @app.route("/mine", methods=["POST"])
 def mine_blocks():
+    if blockchain.resolve_conflicts:
+        response = {"message": "Block not added, resolve conflicts first"}
+        return jsonify(response), 409
     block = blockchain.mine_block()
 
     if block != None:

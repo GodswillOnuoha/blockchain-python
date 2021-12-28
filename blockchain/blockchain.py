@@ -1,4 +1,4 @@
-from collections import OrderedDict
+import requests
 
 from blockchain.block import Block
 from blockchain.wallet import Wallet
@@ -13,13 +13,14 @@ MINING_REWARD = 10
 class Blockchain:
     def __init__(self, hosting_node_id):
         # Our starting block for the the blockchain
-        genesis_block = Block(0, "", [], 100)
+        genesis_block = Block(0, "", [], 100, timestamp=1640090462.789401)
         # Initializing empty blockchain
         self.chain = [genesis_block]
         # Unhandled transactions
         self.__open_transactions = []
         self.hosting_node = hosting_node_id
         self.__peer_nodes = set()
+        self.resolve_conflicts = False
 
         try:
             self.chain, self.__open_transactions, self.__peer_nodes = load_data()
@@ -71,11 +72,17 @@ class Blockchain:
             proof += 1
         return proof
 
-    def get_balance(self):
-        if self.hosting_node == None:
-            return None
+    def get_balance(self, sender=None):
+        import pudb
 
-        participant = self.hosting_node
+        pudb.set_trace()
+        if sender == None:
+            if self.hosting_node == None:
+                return None
+
+            participant = self.hosting_node
+        else:
+            participant = sender
         # Fetch all sent transaction for the user
         # fetches amount of transactions already included in blockchain
         tx_sender = [
@@ -99,7 +106,7 @@ class Blockchain:
         recieved_amount = 0
         for tx in tx_recipient:
             if len(tx) > 0:
-                recieved_amount += tx[0]
+                recieved_amount += sum(tx)
         return recieved_amount - sent_amount
 
     def get_last_blockchain_value(self):
@@ -108,7 +115,9 @@ class Blockchain:
             return None
         return self.__chain[-1]
 
-    def add_transaction(self, recipient, sender, signature, amount=1.0):
+    def add_transaction(
+        self, recipient, sender, signature, amount=1.0, is_broadcast=False
+    ):
         if self.hosting_node == None:
             return False
 
@@ -116,6 +125,27 @@ class Blockchain:
         if Verifier.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
             self.save_data()
+
+            if not is_broadcast:
+                # Broadcast transaction
+                for node in self.__peer_nodes:
+                    url = f"http://{node}/broadcast-transaction"
+                    try:
+                        response = requests.post(
+                            url,
+                            json={
+                                "sender": sender,
+                                "recipient": recipient,
+                                "amount": amount,
+                                "signature": signature,
+                            },
+                        )
+                        if not response.status_code == 200:
+                            print("Transaction declined")
+                            return False
+                    except requests.exceptions.ConnectionError:
+                        continue
+
             return True
         return False
 
@@ -141,4 +171,58 @@ class Blockchain:
         self.__chain.append(block)
         self.__open_transactions = []
         self.save_data()
+
+        converted_block = block.__dict__.copy()
+        converted_block["transactions"] = [
+            tx.__dict__ for tx in converted_block["transactions"]
+        ]
+        for node in self.__peer_nodes:
+            url = f"http://{node}/broadcast-block"
+            try:
+                response = requests.post(url, json={"block": converted_block})
+                if response.status_code == 500 or response.status_code == 400:
+                    print("Block declined")
+                if response.status_code == 409:
+                    self.resolve_conflicts = True
+            except requests.exceptions.ConnectionError:
+                continue
         return block
+
+    def add_block(self, block):
+        # import pudb; pudb.set_trace()
+        transactions = [
+            Transaction(tx["sender"], tx["recipient"], tx["amount"], tx["signature"])
+            for tx in block["transactions"]
+        ]
+        # Remove Mining reward transaction as it wasn't used in proof calculation
+        proof_is_valid = Verifier.valid_proof(
+            transactions[:-1], block["previous_hash"], block["proof"]
+        )
+        hash_match = hash_block(self.__chain[-1]) == block["previous_hash"]
+
+        if not proof_is_valid or not hash_match:
+            return False
+        blk = Block(
+            block["index"],
+            block["previous_hash"],
+            transactions,
+            block["proof"],
+            block["timestamp"],
+        )
+        self.__chain.append(blk)
+
+        # Update open transactions to remove transactions in newly mined block
+        open_transactions = self.__open_transactions[:]
+        for mtx in block["transactions"]:
+            for open_tx in open_transactions:
+                if (open_tx.sender, open_tx.recipient, open_tx.signature) == (
+                    mtx["sender"],
+                    mtx["recipient"],
+                    mtx["signature"],
+                ):
+                    try:
+                        self.__open_transactions.remove(open_tx)
+                    except ValueError:
+                        print("Open tx already removed")
+        self.save_data()
+        return True

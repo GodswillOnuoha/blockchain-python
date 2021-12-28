@@ -37,7 +37,7 @@ class Verifier:
             :check_fund: Flag to check balance. function checks only signature if check_fund is false
         """
         if check_fund:
-            sender_balance = get_balance()
+            sender_balance = get_balance(transaction.sender)
             return sender_balance >= transaction.amount and Wallet.verify_transaction(
                 transaction
             )
