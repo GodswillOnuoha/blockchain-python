@@ -36,6 +36,7 @@ class Blockchain:
         self.__chain = val
 
     def save_data(self):
+        """Saves Blockchain, open transactions and peer nodes to file"""
         save_data(self.__chain, self.__open_transactions, self.__peer_nodes)
 
     def add_node(self, node):
@@ -73,9 +74,6 @@ class Blockchain:
         return proof
 
     def get_balance(self, sender=None):
-        import pudb
-
-        pudb.set_trace()
         if sender == None:
             if self.hosting_node == None:
                 return None
@@ -188,8 +186,49 @@ class Blockchain:
                 continue
         return block
 
+    def resolve_conflict(self):
+        """Resolves conflict when in chain"""
+        winning_chain = self.__chain
+        replaced = False
+        for node in self.__peer_nodes:
+            url = f"http://{node}/chain"
+
+            try:
+                response = requests.get(url)
+                node_chain = response.json()
+                # Pick the valid and longest chain
+                if len(node_chain) > len(winning_chain):
+                    node_chain = [
+                        Block(
+                            block["index"],
+                            block["previous_hash"],
+                            [
+                                Transaction(
+                                    tx["sender"],
+                                    tx["recipient"],
+                                    tx["amount"],
+                                    tx["signature"],
+                                )
+                                for tx in block["transactions"]
+                            ],
+                            block["proof"],
+                            block["timestamp"],
+                        )
+                        for block in node_chain
+                    ]
+                    if Verifier.verify_chain(node_chain):
+                        winning_chain = node_chain
+                        replaced = True
+            except requests.exceptions.ConnectionError:
+                continue
+        self.resolve_conflicts = False
+        self.__chain = winning_chain
+        if replaced:
+            self.__open_transactions = []
+        self.save_data()
+        return replaced
+
     def add_block(self, block):
-        # import pudb; pudb.set_trace()
         transactions = [
             Transaction(tx["sender"], tx["recipient"], tx["amount"], tx["signature"])
             for tx in block["transactions"]
