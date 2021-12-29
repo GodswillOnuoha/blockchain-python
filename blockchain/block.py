@@ -1,9 +1,19 @@
+"""Exposes a block class"""
+
 from time import time
 
-from blockchain.utility.printable import Printable
 
+class Block:
+    """A single block in the chain
 
-class Block(Printable):
+    Attributes:
+        index: index of block in chain
+        previous_hash: hash of previous block
+        transactions: list of transactions added in block
+        proof: proof of work
+        timestamp: time
+    """
+
     def __init__(self, index, previous_hash, transactions, proof, timestamp=time()):
         self.index = index
         self.previous_hash = previous_hash

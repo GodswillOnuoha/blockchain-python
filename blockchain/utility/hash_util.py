@@ -1,8 +1,11 @@
+"""Provides hash functions"""
+
 import json
 import hashlib as hl
 
 
 def hash_string_256(string):
+    """Returns sha256 has of string"""
     return hl.sha256(string).hexdigest()
 
 
@@ -10,7 +13,7 @@ def hash_block(block):
     """Hash a block and return a string representation of it.
 
     Arguments:
-        :block: The block that should be hashed
+        block (object): The block that should be hashed
     """
     hashable_block = block.__dict__.copy()
     hashable_block["transactions"] = [

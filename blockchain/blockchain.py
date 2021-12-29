@@ -1,9 +1,11 @@
+"""Exposes the blockchain class."""
+
 import requests
 
 from blockchain.block import Block
 from blockchain.wallet import Wallet
 from blockchain.transaction import Transaction
-from blockchain.utility.hash_util import hash_block, hash_string_256
+from blockchain.utility.hash_util import hash_block
 from blockchain.utility.file import load_data, save_data
 from blockchain.utility.verification import Verifier
 
@@ -11,6 +13,17 @@ MINING_REWARD = 10
 
 
 class Blockchain:
+    """main block chain
+
+    Attributes:
+        genesis_block: The initial block
+        chain: L list of all confirmed blocks
+        open_transactions: List of transactions not added to the block yet
+        hosting_node: Id (public_key) of node hosting chain
+        peer_nodes: Set of nodes (urls) connected to
+        resolve_conflicts: Flag, true if chain has conflict that needs resolving
+    """
+
     def __init__(self, hosting_node_id):
         # Our starting block for the the blockchain
         genesis_block = Block(0, "", [], 100, timestamp=1640090462.789401)
@@ -29,18 +42,23 @@ class Blockchain:
 
     @property
     def chain(self):
+        """Rturns a copy of a list of confirmed (mined) blocks"""
         return self.__chain[:]
 
     @chain.setter
     def chain(self, val):
         self.__chain = val
 
+    def update_id(self, public_key):
+        """Sets the given public_key as the hosting_node_id"""
+        self.hosting_node = public_key
+
     def save_data(self):
         """Saves Blockchain, open transactions and peer nodes to file"""
         save_data(self.__chain, self.__open_transactions, self.__peer_nodes)
 
     def add_node(self, node):
-        """Adds a node to the chain
+        """Adds a node to the chain.
 
         Arguments:
             :node: The node URL to be added
@@ -58,14 +76,15 @@ class Blockchain:
         self.save_data()
 
     def get_nodes(self):
-        """Returns a list of connected peer nodes"""
+        """Returns a list of connected peer nodes."""
         return list(self.__peer_nodes)
 
     def get_open_transactions(self):
-        """Returns a copy of open transactions"""
+        """Returns a copy of open transactions."""
         return self.__open_transactions[:]
 
     def proof_of_work(self):
+        """Generates a poof of work"""
         last_block = self.__chain[-1]
         last_hash = hash_block(last_block)
         proof = 0
@@ -74,8 +93,9 @@ class Blockchain:
         return proof
 
     def get_balance(self, sender=None):
-        if sender == None:
-            if self.hosting_node == None:
+        """Returns current balance"""
+        if sender is None:
+            if self.hosting_node is None:
                 return None
 
             participant = self.hosting_node
@@ -93,18 +113,18 @@ class Blockchain:
         ]
         tx_sender.append(open_tx_sender)
         sent_amount = 0
-        for tx in tx_sender:
-            if len(tx) > 0:
-                sent_amount += sum(tx)
+        for stx in tx_sender:
+            if len(stx) > 0:
+                sent_amount += sum(stx)
 
         tx_recipient = [
             [tx.amount for tx in block.transactions if tx.recipient == participant]
             for block in self.__chain
         ]
         recieved_amount = 0
-        for tx in tx_recipient:
-            if len(tx) > 0:
-                recieved_amount += sum(tx)
+        for rtx in tx_recipient:
+            if len(rtx) > 0:
+                recieved_amount += sum(rtx)
         return recieved_amount - sent_amount
 
     def get_last_blockchain_value(self):
@@ -116,7 +136,8 @@ class Blockchain:
     def add_transaction(
         self, recipient, sender, signature, amount=1.0, is_broadcast=False
     ):
-        if self.hosting_node == None:
+        """Adds a new transaction to list of open transactions."""
+        if self.hosting_node is None:
             return False
 
         transaction = Transaction(sender, recipient, amount, signature)
@@ -148,7 +169,8 @@ class Blockchain:
         return False
 
     def mine_block(self):
-        if self.hosting_node == None:
+        """Validate open transactions and add a block to chain"""
+        if self.hosting_node is None:
             return None
 
         last_block = self.__chain[-1]
@@ -159,8 +181,8 @@ class Blockchain:
         # Copy transaction and not modify the original
         # This ensures that if mining fails, we do not add reward transaction
         copied_transactions = self.__open_transactions[:]
-        for tx in copied_transactions:
-            if not Wallet.verify_transaction(tx):
+        for otx in copied_transactions:
+            if not Wallet.verify_transaction(otx):
                 return None
 
         copied_transactions.append(reward_transaction)
@@ -229,6 +251,7 @@ class Blockchain:
         return replaced
 
     def add_block(self, block):
+        """Updates local chain with block"""
         transactions = [
             Transaction(tx["sender"], tx["recipient"], tx["amount"], tx["signature"])
             for tx in block["transactions"]
