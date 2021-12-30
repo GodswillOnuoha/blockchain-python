@@ -22,7 +22,7 @@ def get_balance():
             "message": "Loading balance failed.",
             "wallet_set_up": wallet.public_key is not None,
         }
-        return jsonify(response), 400
+        return jsonify(response), 500
 
     response = {"funds": balance, "message": "Fetched balance successfully"}
     return jsonify(response)
