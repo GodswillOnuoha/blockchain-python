@@ -1,10 +1,29 @@
+"""Exposes a Verifier class for validations"""
+
 from blockchain.utility.hash_util import hash_block, hash_string_256
 from blockchain.wallet import Wallet
 
 
 class Verifier:
+    """
+    A class for blockchain verifications.
+
+    Methods:
+        validate_proof(transactions, last_hash, proof): Validates proof
+    """
+
     @staticmethod
     def valid_proof(transactions, last_hash, proof):
+        """Validates proof.
+
+        Arguments:
+            transactions (list): Transactions of a block about to be added
+            last_hash (str): Hash of the last block in the chain
+            proof (str): Generated proof
+
+        Returns:
+            validity (bool): True if proof is verified
+        """
         guess = (
             str([tx.to_ordered_dict() for tx in transactions])
             + str(last_hash)
@@ -15,6 +34,7 @@ class Verifier:
 
     @classmethod
     def verify_chain(cls, blockchain):
+        """Verifies that every block in the given chain is valid"""
         for (index, block) in enumerate(blockchain):
             if index == 0:
                 continue
@@ -32,9 +52,9 @@ class Verifier:
         """Verify transaction by checking signature, and that the sender has sufficient balance
 
         Arguments:
-            :transaction: The transaction that should be verified
-            :get_balance: The function that retuns user's balance
-            :check_fund: Flag to check balance. function checks only signature if check_fund is false
+            transaction: The transaction that should be verified
+            get_balance: The function that retuns user's balance
+            check_fund: Flag to check balance. function checks only signature if check_fund is false
         """
         if check_fund:
             sender_balance = get_balance(transaction.sender)
@@ -42,11 +62,3 @@ class Verifier:
                 transaction
             )
         return Wallet.verify_transaction(transaction)
-
-    # def verify_transactions(self, transactions, get_balance):
-    #     """Verify transactions by checking that the sender has sufficient balance for each transaction
-
-    #     Arguments:
-    #         :trannsactions: The transactions that should be verified
-    #     """
-    #     return all([self.verify_transaction(tx, get_balance, False) for tx in transactions])

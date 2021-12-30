@@ -1,3 +1,5 @@
+"""Entry point"""
+
 from blockchain.node import Node
 
 

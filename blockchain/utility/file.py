@@ -3,17 +3,22 @@
 import json
 import pickle
 
-from collections import OrderedDict
 from blockchain.block import Block
 from blockchain.transaction import Transaction
 
 
 FILE_NAME = "blockchain.txt"
+FILE_ENCODING = "utf-8"
 
 # Save and load data using pickle
 def load_data_pickle():
-    with open(FILE_NAME, "rb") as f:
-        file_content = pickle.loads(f.read())
+    """Loads file into python objects from pickle format file.
+
+    Returns:
+        b, o, p (tuple): A tuple of blockchain, open_transactions, peer_nodes as saved to file
+    """
+    with open(FILE_NAME, "rb") as file:
+        file_content = pickle.loads(file.read())
         blockchain = file_content["chain"]
         open_transactions = file_content["open_transactions"]
         peer_nodes = file_content["peer_nodes"]
@@ -21,19 +26,24 @@ def load_data_pickle():
 
 
 def save_data_pickle(blockchain, open_transactions, peer_nodes):
-    with open(FILE_NAME, "wb") as f:
+    """Saves given objects to a file in pickle format"""
+    with open(FILE_NAME, "wb") as file:
         data = {
             "chain": blockchain,
             "open_transactions": open_transactions,
             "peer_nodes": peer_nodes,
         }
-        f.write(pickle.dumps(data))
+        file.write(pickle.dumps(data))
 
 
-# Save and load data using json (To be used for development to view data)
 def load_data_json():
-    with open(FILE_NAME, "r") as f:
-        file_content = f.readlines()
+    """Loads file into python objects from json format file.
+
+    Returns:
+        b, o, p (tuple): A tuple of blockchain, open_transactions, peer_nodes as saved to file
+    """
+    with open(FILE_NAME, "r", encoding=FILE_ENCODING) as file:
+        file_content = file.readlines()
 
         blockchain = json.loads(file_content[0][:-1])
 
@@ -66,6 +76,7 @@ def load_data_json():
 
 
 def save_data_json(blockchain, open_transactions, peer_nodes):
+    """Saves given objects to a file in json format"""
     saveable_chain = [
         block.__dict__
         for block in [
@@ -80,20 +91,22 @@ def save_data_json(blockchain, open_transactions, peer_nodes):
         ]
     ]
     saveable_tx = [tx.__dict__ for tx in open_transactions]
-    with open(FILE_NAME, "w") as f:
-        f.write(json.dumps(saveable_chain))
-        f.write("\n")
-        f.write(json.dumps(saveable_tx))
-        f.write("\n")
-        f.write(json.dumps(list(peer_nodes)))
+    with open(FILE_NAME, "w", encoding=FILE_ENCODING) as file:
+        file.write(json.dumps(saveable_chain))
+        file.write("\n")
+        file.write(json.dumps(saveable_tx))
+        file.write("\n")
+        file.write(json.dumps(list(peer_nodes)))
 
 
 # Save and load data interface
 def save_data(blockchain, open_transactions, peer_nodes):
+    """Saves Blockchain, open transactions and peer nodes to file"""
     # save_data_pickle(blockchain, open_transactions, peer_nodes)
     save_data_json(blockchain, open_transactions, peer_nodes)
 
 
 def load_data():
+    """Reads Blockchain, open transactions and peer nodes from file"""
     # return load_data_pickle()
     return load_data_json()

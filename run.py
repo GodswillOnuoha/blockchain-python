@@ -1,3 +1,5 @@
+"""Runs blockchain insance"""
+
 from argparse import ArgumentParser
 
 from blockchain import create_node
