@@ -2,12 +2,18 @@
 
 import json
 import pickle
+import os
+
+from dotenv import load_dotenv
+
 
 from blockchain.block import Block
 from blockchain.transaction import Transaction
 
+load_dotenv()
 
-FILE_NAME = "blockchain.txt"
+f_env = os.getenv("FLASK_ENV")
+FILE_NAME = f"{f_env}_blockchain.txt"
 FILE_ENCODING = "utf-8"
 
 # Save and load data using pickle
