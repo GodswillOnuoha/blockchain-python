@@ -1,6 +1,5 @@
 # blockchain python
-
-A simple API demonstration of blockchain using python. Supported features:
+A simple API implementation of blockchain proof of work cryptocurrency using python. The application supports the running of multiple instances (Nodes) that communicate and synchronize. Implemented features are:
 
 - create wallet
 - load wallet
